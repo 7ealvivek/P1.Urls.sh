@@ -72,5 +72,3 @@ results/example.com/
   - ✅ Critical findings with emoji-based alerts
   - ✅ Sends results as JSON files for quick analysis
 ```
-
-This Markdown content will render nicely on GitHub, providing a clean and professional look for your project. You can copy and paste this directly into your `README.md` file.
