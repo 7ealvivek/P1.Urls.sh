@@ -66,7 +66,7 @@ process_target() {
 
   # 🔄 Deduplicate URLs
   echo "🔄 Deduplicating URLs..."
-  cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | urldedupe -u -s | httpx -silent "${HTTPX_OPTIONS[@]}" | jq -r .url | anew "$OUTPUT_DIR/urls.txt" >/dev/null
+  cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | sed 's/#.*$//; s/?.*$//; s|/$||' | urldedupe -u -s | httpx -silent "${HTTPX_OPTIONS[@]}" | jq -r .url | anew "$OUTPUT_DIR/urls.txt" >/dev/null
 
   # ⚠️ Classify Vulnerabilities
   echo "⚠️ Classifying vulnerabilities (XSS, SQLi, LFI, SSRF)..."
@@ -82,7 +82,7 @@ process_target() {
   # 🏴‍☠️ Run Nuclei if URLs are available
   if [ -s "$OUTPUT_DIR/classified_urls.txt" ]; then
     echo "🛡️ Running Nuclei..."
-    nuclei -t "$NUCLEI_TEMPLATES" -tags "$INJECTION_TAGS" -severity critical,high,medium -exclude-tags "misc,info" \
+    nuclei -tags "$INJECTION_TAGS" -severity critical,high,medium -exclude-tags "misc,info" \
       -l "$OUTPUT_DIR/classified_urls.txt" -rate-limit "$RATE_LIMIT" -concurrency "$CONCURRENCY" \
       -retries 2 -disable-update-check -o "$OUTPUT_DIR/nuclei_results.json"
     
