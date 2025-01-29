@@ -56,10 +56,10 @@ process_target() {
 
   # 🌐 Fetch URLs
   echo "🚀 Running gau..."
-  gau --threads 20 --blacklist png,jpg,gif,svg,css,woff2,woff,ttf --fc 404,403 "$DOMAIN" | anew "$OUTPUT_DIR/gau.txt" >/dev/null
+  gau --threads 20 --blacklist png,jpg,gif,svg,css,woff2,woff,ttf --providers wayback,otx,urlscan --verbose --fc 404,403 "$DOMAIN" | anew "$OUTPUT_DIR/gau.txt" >/dev/null
 
   echo "🚀 Running katana..."
-  katana -u "https://$DOMAIN" -d 3 -jc -kf all -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt" >/dev/null
+  katana -u "https://$DOMAIN" -duc -silent -nc -fx -xhr -ef woff,css,png,svg,jpg,woff2,jpeg,gif,svg -d 3 -jc -kf all -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt" >/dev/null
   
   echo "🚀 Running waymore..."
   waymore -i "$DOMAIN" -mode U --retries 3 --timeout 10 --memory-threshold 95 --processes 5 --config ~/.config/waymore/config.yml --output-urls "$OUTPUT_DIR/waymore.txt" >/dev/null
