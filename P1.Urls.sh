@@ -24,7 +24,7 @@ TELEGRAM_CHAT_ID="994467652"
 # 📂 Configure Input & Output
 INPUT="$1"
 TARGET_NAME=$(basename "$INPUT" .txt | awk -F'.' '{print $(NF-1)"."$NF}')
-OUTPUT_DIR="${2:-results}/$TARGET_NAME"
+OUTPUT_DIR="$(realpath ${2:-results})/$TARGET_NAME"
 mkdir -p "$OUTPUT_DIR"
 
 # 📲 Telegram Notification Functions
@@ -46,7 +46,7 @@ random_ua() {
 }
 
 HTTPX_OPTIONS=(
-  -random-agent -status-code -content-length -title -tech-detect
+  -status-code -content-length -title -tech-detect
   -rate-limit "$RATE_LIMIT" -threads "$CONCURRENCY" -timeout 5 -retries 2 -json
 )
 
