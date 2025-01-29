@@ -1,4 +1,4 @@
-#!/bin/bash 
+#!/bin/bash
 
 # 🎯 P1.Urls.sh - Aggressive URL Discovery & Vulnerability Scanning (Now with Waymore!)
 # 🚀 Author: Vivek (realvivek)
@@ -57,7 +57,7 @@ process_target() {
   # 🌐 Fetch URLs
   gau --threads 20 --blacklist png,jpg,gif,svg,css,woff2,woff,ttf --fc 404,403 "$DOMAIN" | anew "$OUTPUT_DIR/gau.txt" >/dev/null
   katana -u "https://$DOMAIN" -d 3 -jc -kf all -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt"
-  waymore -i "$DOMAIN" -mode U --retries 3 --timeout 10 --memory-threshold 95 --processes 5 --config ~/.config/waymore/config.yml -o "$OUTPUT_DIR/waymore.txt"
+  waymore -i "$DOMAIN" -mode U --retries 3 --timeout 10 --memory-threshold 95 --processes 5 --config ~/.config/waymore/config.yml --output "$OUTPUT_DIR/waymore.txt"
 
   # 🔄 Deduplicate URLs
   cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | urldedupe -u -s | httpx -silent "${HTTPX_OPTIONS[@]}" | jq -r .url | anew "$OUTPUT_DIR/urls.txt" >/dev/null
@@ -75,7 +75,7 @@ process_target() {
   # 🏴‍☠️ Run Nuclei
   if [ -s "$OUTPUT_DIR/classified_urls.txt" ]; then
     nuclei -t "$NUCLEI_TEMPLATES" -tags "$INJECTION_TAGS" -severity critical,high,medium -exclude-tags "misc,info" \
-      -l "$OUTPUT_DIR/classified_urls.txt" -random-agent -rate-limit "$RATE_LIMIT" -concurrency "$CONCURRENCY" \
+      -l "$OUTPUT_DIR/classified_urls.txt" -rate-limit "$RATE_LIMIT" -concurrency "$CONCURRENCY" \
       -retries 2 -disable-update-check -json -o "$OUTPUT_DIR/nuclei_results.json"
 
     # 🔔 Notify Findings
