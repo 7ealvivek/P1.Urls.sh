@@ -1,117 +1,70 @@
 #!/bin/bash
 
-# 🎯 P1.Urls.sh - Aggressive URL Discovery & Vulnerability Scanning
-# 🚀 Author: Vivek (realvivek)
-# 🛡️ Version: 1.4.0
+# 🎯 P1.Urls.sh - Ultimate URL Discovery & Vulnerability Scanner
+# 🚀 Version: 2.0 | Author: Vivek (realvivek)
 
-VERSION="1.4.0"
-
-# ✅ Tool Verification
-required_tools=("gau" "katana" "waymore" "gf" "httpx" "urldedupe" "nuclei" "parallel" "jq")
+# ✅ Mandatory Requirements
+required_tools=("gau" "katana" "waymore" "gf" "httpx" "urldedupe" "nuclei" "jq")
 for tool in "${required_tools[@]}"; do
-  command -v "$tool" &>/dev/null || { echo "❌ $tool not installed!"; exit 1; }
+  command -v "$tool" || { echo "❌ $tool missing!"; exit 1; }
 done
+
+# 🔑 REQUIRED: Add your API keys here!
+export URLSCAN_API_KEY="02899922-32c3-4d1c-91b0-04aa1bc95cef"
+export VIRUSTOTAL_API_KEY="639632231b5a98a6389fbc7f5d8e6c399684363dea67d6431198f9a733ed9031"
 
 # ⚙️ Configuration
 CONCURRENCY=50
 RATE_LIMIT=100
-DELAY=1
-USER_AGENTS_FILE="user_agents.txt"
-NUCLEI_TEMPLATES="$HOME/nuclei-templates"
-INJECTION_TAGS="xss,sqli,lfi,ssrf,rce"
-
-# 🔑 API Keys (REPLACE WITH YOUR OWN)
-export URLSCAN_API_KEY="your_urlscan_api_key"
-export VIRUSTOTAL_API_KEY="your_virustotal_api_key"
-
-# 📂 Configure Input & Output
-INPUT="$1"
-TARGET_NAME=$(basename "$INPUT" .txt | awk -F'.' '{print $(NF-1)"."$NF}')
-OUTPUT_DIR="${2:-results}/$TARGET_NAME"
+OUTPUT_DIR="$(pwd)/results/$(date +%Y%m%d_%H%M%S)"
 mkdir -p "$OUTPUT_DIR"
 
-# 📲 Telegram Notification Functions (Optional)
-send_telegram_file() {
-  [ -z "$TELEGRAM_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ] && return
-  curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
-    -F chat_id="${TELEGRAM_CHAT_ID}" -F document="@${1}" >/dev/null
-}
+# 🎯 Main Function
+scan_target() {
+  target="$1"
+  echo "🔍 Starting scan: $target"
+  
+  # 1️⃣ URL Discovery
+  echo "🚀 Gathering URLs..."
+  
+  # GAU (Wayback/URLScan/OTX)
+  gau --threads 20 --blacklist woff,css,png,svg,jpg,woff2,jpeg,gif,svg --subs --providers wayback,urlscan,otx "$target" 2>/dev/null | anew "$OUTPUT_DIR/gau.txt"
+  
+  # Katana (Crawling)
+  katana -u "https://$target" -d 3 -kf all -c 15 -silent -duc -silent -nc -jc -fx -xhr -ef woff,css,png,svg,jpg,woff2,jpeg,gif,svg 2>/dev/null | anew "$OUTPUT_DIR/katana.txt"
+  
+  # Waymore (Comprehensive)
+  waymore -i "$target" -mode U -ft "font/woff,font/woff2,text/css,image/png,image/svg+xml,image/jpeg,image/gif" -oU "$OUTPUT_DIR/waymore.txt" 2>/dev/null
 
-# 🎭 Random User-Agent
-random_ua() {
-  [ -f "$USER_AGENTS_FILE" ] && shuf -n 1 "$USER_AGENTS_FILE" || echo "Mozilla/5.0 (Windows NT 10.0; rv:102.0)"
-}
-
-HTTPX_OPTIONS=(
-  -status-code -content-length -title -tech-detect
-  -rate-limit "$RATE_LIMIT" -threads "$CONCURRENCY" -timeout 5 -retries 2 -json -silent
-)
-
-process_target() {
-  local DOMAIN="$1"
-  echo "🔍 Scanning: $DOMAIN"
-
-  # 🌐 URL Discovery
-  echo "🚀 Running discovery tools..."
-  gau --threads 20 --blacklist woff,css,png,svg,jpg,woff2,jpeg,gif,svg --providers wayback,otx,urlscan --subs --fc 404,403 "$DOMAIN" | anew "$OUTPUT_DIR/gau.txt" >/dev/null
-  katana -u "https://$DOMAIN" -duc -silent -nc -ef woff,css,png,svg,jpg,woff2,jpeg,gif,svg -d 3 -jc -kf -fx -xhr -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt" >/dev/null
-  waymore -i "$DOMAIN" -mode U -oU "$OUTPUT_DIR/waymore.txt" 2>/dev/null
-
-  # 🔄 Advanced Deduplication
-  echo "🔄 Processing URLs..."
+  # 2️⃣ Process URLs
+  echo "🔄 Processing URLs ($(wc -l $OUTPUT_DIR/*.txt | tail -1 | awk '{print $1}') raw)..."
   cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | \
-    sed -E '
-      s|#.*$||;           # Remove fragments
-      s|/[^/]+$|/|;       # Normalize paths
-      s|/:([0-9]+)/|:\1/|g;
-      s|/?$||;
-      s|:80/|/|g;
-      s|:443/|/|g;
-      s|www\.||gi;
-    ' | \
     urldedupe -u -s | \
-    httpx "${HTTPX_OPTIONS[@]}" -o "$OUTPUT_DIR/httpx.json"
+    httpx -silent -status-code -title -tech-detect -fr -timeout 10 -retries 2 -o "$OUTPUT_DIR/valid_urls.txt"
 
-  # 🎯 Extract Valid URLs
-  jq -r '.url' "$OUTPUT_DIR/httpx.json" | anew "$OUTPUT_DIR/valid_urls.txt" >/dev/null
+  # 3️⃣ Vulnerability Classification
+  echo "⚠️ Analyzing vulnerabilities..."
+  [ -s "$OUTPUT_DIR/valid_urls.txt" ] && {
+    gf xss "$OUTPUT_DIR/valid_urls.txt" | anew "$OUTPUT_DIR/xss.txt"
+    gf sqli "$OUTPUT_DIR/valid_urls.txt" | anew "$OUTPUT_DIR/sqli.txt"
+    gf lfi "$OUTPUT_DIR/valid_urls.txt" | anew "$OUTPUT_DIR/lfi.txt"
+    gf ssrf "$OUTPUT_DIR/valid_urls.txt" | anew "$OUTPUT_DIR/ssrf.txt"
+  }
 
-  # ⚠️ Vulnerability Classification
-  echo "⚠️ Classifying vulnerabilities..."
-  gf_patterns=("xss" "sqli" "lfi" "ssrf" "redirect" "rce" "ssti")
-  for pattern in "${gf_patterns[@]}"; do
-    gf "$pattern" < "$OUTPUT_DIR/valid_urls.txt" | anew "$OUTPUT_DIR/${pattern}.txt" >/dev/null
-  done
+  # 4️⃣ Nuclei Scanning
+  echo "🛡️ Running Nuclei..."
+  [ -s "$OUTPUT_DIR/valid_urls.txt" ] && \
+    nuclei -l "$OUTPUT_DIR/valid_urls.txt" \
+    -tags "xss,sqli,lfi,ssrf,rce" \
+    -severity critical,high,medium \
+    -rate-limit $RATE_LIMIT \
+    -concurrency $CONCURRENCY \
+    -silent \
+    -o "$OUTPUT_DIR/nuclei_results.txt"
 
-  # 🛡️ Nuclei Scanning
-  if [ -s "$OUTPUT_DIR/valid_urls.txt" ]; then
-    echo "🛡️ Running Nuclei..."
-    nuclei \
-      -l "$OUTPUT_DIR/valid_urls.txt" \
-      -tags "$INJECTION_TAGS" \
-      -severity critical,high,medium \
-      -rate-limit "$RATE_LIMIT" \
-      -concurrency "$CONCURRENCY" \
-      -retries 2 \
-      -disable-update-check \
-      -j -o "$OUTPUT_DIR/nuclei.json"
-    
-    # Format results
-    jq < "$OUTPUT_DIR/nuclei.json" > "$OUTPUT_DIR/nuclei_results.txt"
-    
-    # Optional Telegram notification
-    [ -s "$OUTPUT_DIR/nuclei_results.txt" ] && send_telegram_file "$OUTPUT_DIR/nuclei_results.txt"
-  else
-    echo "🔴 No valid URLs for Nuclei scanning"
-  fi
+  echo "✅ Scan completed! Results: $OUTPUT_DIR"
 }
 
-# 🚀 Main Execution
-if [ -f "$INPUT" ]; then
-  while IFS= read -r target; do
-    process_target "$(echo "$target" | sed -E 's#^https?://##; s|/$||')"
-  done < "$INPUT"
-else
-  process_target "$(echo "$INPUT" | sed -E 's#^https?://##; s|/$||')"
-fi
-
-echo "✅ Scan completed! Results: $OUTPUT_DIR"
+# 🚀 Execution
+[ -z "$1" ] && { echo "Usage: $0 <target/domain>"; exit 1; }
+scan_target "$(echo "$1" | sed 's|https\?://||;s|/$||')"
