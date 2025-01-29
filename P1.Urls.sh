@@ -106,9 +106,16 @@ process_target() {
 
 # 🚀 Main Execution
 if [ -f "$INPUT" ]; then
-  parallel -j "$CONCURRENCY" "process_target {}" ::: "$(cat "$INPUT")"
+  # Process each line in the input file
+  while IFS= read -r target; do
+    # Normalize the target (remove http:// or https://)
+    target=$(echo "$target" | sed -E 's#^https?://##')
+    process_target "$target"
+  done < "$INPUT"
 else
-  process_target "$INPUT"
+  # Process a single target
+  target=$(echo "$INPUT" | sed -E 's#^https?://##')
+  process_target "$target"
 fi
 
 # ✅ Results Ready
