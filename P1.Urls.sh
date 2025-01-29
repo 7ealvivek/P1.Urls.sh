@@ -55,14 +55,21 @@ process_target() {
   echo "🔍 Scanning: $DOMAIN"
 
   # 🌐 Fetch URLs
+  echo "🚀 Running gau..."
   gau --threads 20 --blacklist png,jpg,gif,svg,css,woff2,woff,ttf --fc 404,403 "$DOMAIN" | anew "$OUTPUT_DIR/gau.txt" >/dev/null
-  katana -u "https://$DOMAIN" -d 3 -jc -kf all -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt"
-  waymore -i "$DOMAIN" -mode U --retries 3 --timeout 10 --memory-threshold 95 --processes 5 --config ~/.config/waymore/config.yml --output-urls "$OUTPUT_DIR/waymore.txt"
+
+  echo "🚀 Running katana..."
+  katana -u "https://$DOMAIN" -d 3 -jc -kf all -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt" >/dev/null
+  
+  echo "🚀 Running waymore..."
+  waymore -i "$DOMAIN" -mode U --retries 3 --timeout 10 --memory-threshold 95 --processes 5 --config ~/.config/waymore/config.yml --output-urls "$OUTPUT_DIR/waymore.txt" >/dev/null
 
   # 🔄 Deduplicate URLs
+  echo "🔄 Deduplicating URLs..."
   cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | urldedupe -u -s | httpx -silent "${HTTPX_OPTIONS[@]}" | jq -r .url | anew "$OUTPUT_DIR/urls.txt" >/dev/null
 
   # ⚠️ Classify Vulnerabilities
+  echo "⚠️ Classifying vulnerabilities (XSS, SQLi, LFI, SSRF)..."
   gf xss < "$OUTPUT_DIR/urls.txt" | anew "$OUTPUT_DIR/xss.txt" >/dev/null
   gf sqli < "$OUTPUT_DIR/urls.txt" | anew "$OUTPUT_DIR/sqli.txt" >/dev/null
   gf lfi < "$OUTPUT_DIR/urls.txt" | anew "$OUTPUT_DIR/lfi.txt" >/dev/null
@@ -74,10 +81,11 @@ process_target() {
 
   # 🏴‍☠️ Run Nuclei if URLs are available
   if [ -s "$OUTPUT_DIR/classified_urls.txt" ]; then
+    echo "🛡️ Running Nuclei..."
     nuclei -t "$NUCLEI_TEMPLATES" -tags "$INJECTION_TAGS" -severity critical,high,medium -exclude-tags "misc,info" \
       -l "$OUTPUT_DIR/classified_urls.txt" -rate-limit "$RATE_LIMIT" -concurrency "$CONCURRENCY" \
       -retries 2 -disable-update-check -json -o "$OUTPUT_DIR/nuclei_results.json"
-
+    
     # 🔔 Notify Findings
     if [ -s "$OUTPUT_DIR/nuclei_results.json" ]; then
       send_telegram_file "$OUTPUT_DIR/nuclei_results.json"
