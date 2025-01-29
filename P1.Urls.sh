@@ -55,7 +55,7 @@ process_target() {
   echo "🚀 Running discovery tools..."
   gau --threads 20 --blacklist woff,css,png,svg,jpg,woff2,jpeg,gif,svg --providers wayback,otx,urlscan --subs --fc 404,403 "$DOMAIN" | anew "$OUTPUT_DIR/gau.txt" >/dev/null
   katana -u "https://$DOMAIN" -duc -silent -nc -ef woff,css,png,svg,jpg,woff2,jpeg,gif,svg -d 3 -jc -kf -fx -xhr -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt" >/dev/null
-  waymore -i "$DOMAIN" -mode U -o "$OUTPUT_DIR/waymore.txt" >/dev/null
+  waymore -i "$DOMAIN" -mode U -oU "$OUTPUT_DIR/waymore.txt" 2>/dev/null
 
   # 🔄 Advanced Deduplication
   echo "🔄 Processing URLs..."
