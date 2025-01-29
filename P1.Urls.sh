@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # 🎯 P1.Urls.sh - Aggressive URL Discovery & Vulnerability Scanning (Now with Waymore!)
-# 🚀 Author: Vivek (bugcrowd.com/realvivek)
+# 🚀 Author: Vivek (realvivek)
 # 🛡️ Description: Discovers URLs using gau, katana, waymore & scans them with Nuclei.
 
 VERSION="1.3.0"
@@ -45,7 +45,7 @@ random_ua() {
   [ -f "$USER_AGENTS_FILE" ] && shuf -n 1 "$USER_AGENTS_FILE" || echo "Mozilla/5.0 (Windows NT 10.0; rv:102.0)"
 }
 
-HTTPX_OPTIONS=(
+HTTPX_OPTIONS=( 
   -status-code -content-length -title -tech-detect
   -rate-limit "$RATE_LIMIT" -threads "$CONCURRENCY" -timeout 5 -retries 2 -json
 )
@@ -57,10 +57,10 @@ process_target() {
   # 🌐 Fetch URLs
   gau --threads 20 --blacklist png,jpg,gif,svg,css,woff2,woff,ttf --fc 404,403 "$DOMAIN" | anew "$OUTPUT_DIR/gau.txt" >/dev/null
   katana -u "https://$DOMAIN" -d 3 -jc -kf all -c 15 -H "User-Agent: $(random_ua)" -o "$OUTPUT_DIR/katana.txt"
-  waymore -i "$DOMAIN" -mode U --retries 3 --timeout 10 --memory-threshold 95 --processes 5 --config ~/.config/waymore/config.yml -o "$OUTPUT_DIR/waymore_urls.txt" # Fixed output flag issue
+  waymore -i "$DOMAIN" -mode U --retries 3 --timeout 10 --memory-threshold 95 --processes 5 --config ~/.config/waymore/config.yml --output-urls "$OUTPUT_DIR/waymore.txt"
 
   # 🔄 Deduplicate URLs
-  cat "$OUTPUT_DIR"/{gau,katana,waymore_urls}.txt | urldedupe -u -s | httpx -silent "${HTTPX_OPTIONS[@]}" | jq -r .url | anew "$OUTPUT_DIR/urls.txt" >/dev/null
+  cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | urldedupe -u -s | httpx -silent "${HTTPX_OPTIONS[@]}" | jq -r .url | anew "$OUTPUT_DIR/urls.txt" >/dev/null
 
   # ⚠️ Classify Vulnerabilities
   gf xss < "$OUTPUT_DIR/urls.txt" | anew "$OUTPUT_DIR/xss.txt" >/dev/null
