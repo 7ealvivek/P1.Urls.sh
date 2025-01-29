@@ -21,14 +21,21 @@
  `sudo apt install parallel jq -y`
 
 # Golang Tools
-`go install github.com/lc/gau/v2/cmd/gau@latest
-go install github.com/projectdiscovery/katana/cmd/katana@latest
-go install github.com/xnl-h4ck3r/waymore/cmd/waymore@latest
-go install github.com/tomnomnom/gf@latest
-go install github.com/projectdiscovery/httpx/cmd/httpx@latest
-go install github.com/tomnomnom/anew@latest
-go install github.com/tomnomnom/urldedupe@latest
-go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest`
+`go install github.com/lc/gau/v2/cmd/gau@latest`
+
+`go install github.com/projectdiscovery/katana/cmd/katana@latest`
+
+`go install github.com/xnl-h4ck3r/waymore/cmd/waymore@latest`
+
+`go install github.com/tomnomnom/gf@latest`
+
+`go install github.com/projectdiscovery/httpx/cmd/httpx@latest`
+
+`go install github.com/tomnomnom/anew@latest`
+
+`go install github.com/tomnomnom/urldedupe@latest`
+
+`go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest`
 
 ## Get P1.Urls.sh
 `https://github.com/7ealvivek/P1.Urls.sh.git`
