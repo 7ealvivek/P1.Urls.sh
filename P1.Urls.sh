@@ -72,7 +72,7 @@ process_target() {
   # 🛑 Save All Classified URLs
   cat "$OUTPUT_DIR"/{xss,sqli,lfi,ssrf,redirect}.txt | urldedupe -u -s | anew "$OUTPUT_DIR/classified_urls.txt" >/dev/null
 
-  # 🏴‍☠️ Run Nuclei
+  # 🏴‍☠️ Run Nuclei if URLs are available
   if [ -s "$OUTPUT_DIR/classified_urls.txt" ]; then
     nuclei -t "$NUCLEI_TEMPLATES" -tags "$INJECTION_TAGS" -severity critical,high,medium -exclude-tags "misc,info" \
       -l "$OUTPUT_DIR/classified_urls.txt" -rate-limit "$RATE_LIMIT" -concurrency "$CONCURRENCY" \
@@ -82,6 +82,8 @@ process_target() {
     if [ -s "$OUTPUT_DIR/nuclei_results.json" ]; then
       send_telegram_file "$OUTPUT_DIR/nuclei_results.json"
     fi
+  else
+    echo "🔴 No URLs to scan with Nuclei"
   fi
 }
 
