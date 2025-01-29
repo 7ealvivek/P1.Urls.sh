@@ -31,7 +31,8 @@ go install github.com/tomnomnom/urldedupe@latest
 go install github.com/projectdiscovery/nuclei/v2/cmd/nuclei@latest`
 
 ## Get P1.Urls.sh
-`wget https://raw.githubusercontent.com/realvivek/P1.Urls.sh/main/P1.Urls.sh`
+`https://github.com/7ealvivek/P1.Urls.sh.git`
+`cd P1.Urls.sh`
 `chmod +x P1.Urls.sh`
 
 ## Usage
