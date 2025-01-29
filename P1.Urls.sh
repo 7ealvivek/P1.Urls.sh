@@ -1,34 +1,15 @@
-#!/bin/bash
+#!/bin/bash 
 
 # 🎯 P1.Urls.sh - Aggressive URL Discovery & Vulnerability Scanning (Now with Waymore!)
 # 🚀 Author: Vivek (realvivek)
 # 🛡️ Description: Discovers URLs using gau, katana, waymore & scans them with Nuclei.
-# 🔄 Auto-Upgrade: Ensures you are always using the latest version!
 
 VERSION="1.3.0"
-GITHUB_REPO="realvivek/P1.Urls.sh"
-SCRIPT_URL="https://raw.githubusercontent.com/$GITHUB_REPO/main/P1.Urls.sh"
 
 # ✅ One-Line Tool Verification
 for tool in gau katana waymore gf httpx urldedupe nuclei parallel jq; do
   command -v "$tool" &>/dev/null || { echo "❌ $tool not installed! Install it first."; exit 1; }
 done
-
-# 🔄 Auto-Upgrade Function
-check_for_update() {
-  echo "🔍 Checking for updates..."
-  LATEST_VERSION=$(curl -s "https://api.github.com/repos/$GITHUB_REPO/releases/latest" | jq -r .tag_name)
-  if [[ "$LATEST_VERSION" != "$VERSION" ]]; then
-    echo "⚡ New version available: $LATEST_VERSION! Updating..."
-    curl -s -L "$SCRIPT_URL" -o P1.Urls.sh
-    chmod +x P1.Urls.sh
-    echo "✅ Upgrade complete! Restarting..."
-    exec ./P1.Urls.sh "$@"
-  else
-    echo "✅ You are using the latest version ($VERSION)."
-  fi
-}
-check_for_update "$@"
 
 # ⚙️ Configuration
 CONCURRENCY=100
