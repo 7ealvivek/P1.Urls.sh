@@ -84,7 +84,7 @@ process_target() {
     echo "🛡️ Running Nuclei..."
     nuclei -t "$NUCLEI_TEMPLATES" -tags "$INJECTION_TAGS" -severity critical,high,medium -exclude-tags "misc,info" \
       -l "$OUTPUT_DIR/classified_urls.txt" -rate-limit "$RATE_LIMIT" -concurrency "$CONCURRENCY" \
-      -retries 2 -disable-update-check -json -o "$OUTPUT_DIR/nuclei_results.json"
+      -retries 2 -disable-update-check -o "$OUTPUT_DIR/nuclei_results.json"
     
     # 🔔 Notify Findings
     if [ -s "$OUTPUT_DIR/nuclei_results.json" ]; then
