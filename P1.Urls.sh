@@ -1,6 +1,6 @@
 #!/bin/bash
 # 🎯 P1.Urls.sh - Ultimate URL Discovery & Vulnerability Scanner
-# 🚀 Version: 3.2 | Author: Vivek (realvivek)
+# 🚀 Version: 3.3 | Author: Vivek (realvivek)
 # ✅ Mandatory Requirements
 required_tools=("gau" "katana" "waymore" "gf" "httpx" "nuclei")
 for tool in "${required_tools[@]}"; do
@@ -46,7 +46,7 @@ process_urls() {
   
   # Step 2: Filter valid URLs
   echo "🔍 Validating URLs..."
-  cat "$OUTPUT_DIR/all_unique_urls.txt" | grep -E '^https?://' | urldecode | httpx -silent -timeout 30 > "$OUTPUT_DIR/valid_urls.txt"
+  cat "$OUTPUT_DIR/all_unique_urls.txt" | grep -E '^https?://' | perl -MURI::Escape -ne 'chomp; print uri_unescape($_), "\n"' | httpx -silent -timeout 30 > "$OUTPUT_DIR/valid_urls.txt"
   
   # Report valid URLs
   wc -l "$OUTPUT_DIR/valid_urls.txt" | awk '{print "📊 Valid URLs:", $1}'
