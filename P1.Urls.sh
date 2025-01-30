@@ -1,8 +1,8 @@
 #!/bin/bash
 # 🎯 P1.Urls.sh - Ultimate URL Discovery & Vulnerability Scanner
-# 🚀 Version: 3.1 | Author: Vivek (realvivek)
+# 🚀 Version: 3.2 | Author: Vivek (realvivek)
 # ✅ Mandatory Requirements
-required_tools=("gau" "katana" "waymore" "gf" "httpx" "urldedupe" "nuclei")
+required_tools=("gau" "katana" "waymore" "gf" "httpx" "nuclei")
 for tool in "${required_tools[@]}"; do
   command -v "$tool" || { echo "❌ $tool missing!"; exit 1; }
 done
@@ -42,11 +42,14 @@ process_urls() {
   
   # Step 1: Merge and deduplicate
   echo "🔗 Merging URLs..."
-  cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | urldedupe -u -s | tee "$OUTPUT_DIR/all_unique_urls.txt" | wc -l | awk '{print "📊 Total unique URLs:", $1}'
+  cat "$OUTPUT_DIR"/{gau,katana,waymore}.txt | sort | uniq | tee "$OUTPUT_DIR/all_unique_urls.txt" | wc -l | awk '{print "📊 Total unique URLs:", $1}'
   
-  # Step 2: Validate with httpx
+  # Step 2: Filter valid URLs
   echo "🔍 Validating URLs..."
-  cat "$OUTPUT_DIR/all_unique_urls.txt" | httpx -silent -fr -timeout 15 -o "$OUTPUT_DIR/valid_urls.txt"
+  cat "$OUTPUT_DIR/all_unique_urls.txt" | grep -E '^https?://' | urldecode | httpx -silent -timeout 30 > "$OUTPUT_DIR/valid_urls.txt"
+  
+  # Report valid URLs
+  wc -l "$OUTPUT_DIR/valid_urls.txt" | awk '{print "📊 Valid URLs:", $1}'
 }
 
 # 🔥 Vulnerability Detection
@@ -65,7 +68,7 @@ detect_vulns() {
   echo "🛡️ Running Nuclei..."
   nuclei -update-templates
   nuclei -l "$OUTPUT_DIR/valid_urls.txt" \
-    -tags "xss,sqli,lfi,ssrf" \
+    -tags "sqli,xss,lfi,ssrf" \
     -severity critical,high,medium \
     -rate-limit 100 \
     -concurrency 50 \
@@ -75,7 +78,7 @@ detect_vulns() {
   # Immediate Reporting
   if [ -s "$OUTPUT_DIR/nuclei_results.txt" ]; then
     echo "🚨 Vulnerabilities Found! Check '$OUTPUT_DIR/nuclei_results.txt' for details."
-    cat "$OUTPUT_DIR/nuclei_results.txt"
+    head -n 10 "$OUTPUT_DIR/nuclei_results.txt"
   else
     echo "✅ No vulnerabilities found."
   fi
